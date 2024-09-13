@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+
+    <link rel="stylesheet" href="controllerGraphics.scss">
+</head>
+
+<body>
+    <div id="wrapper">
+        <div id="drop-zone-wrapper">
+            <div id="drop-zone">
+                <div id="label">
+                    <i class="fa fa-cloud-upload"></i>
+                    <h1>Drop MP3 Here</h1>
+                </div>
+            </div>
+            <div id="alternate-option">
+                <i class="fa fa-music"></i>
+                <h1>Or Use Default Song</h1>
+            </div>
+        </div>
+
+        <div id="center-logo" class="hidden">
+            <div id="audio-canvas-wrapper">
+                <canvas id="audio-canvas"></canvas>
+            </div>
+            <div id="text">
+                <h1>MUSIC</h1>
+                <h1>SQUAD</h1>
+            </div>
+        </div>
+
+        <div class="particles particles-slow"></div>
+        <div class="particles particles-fast initial hidden"></div>
+
+        <div id="reset">
+            <h1>Reset</h1>
+        </div>
+    </div>
+
+    <script src="controllerGraphics.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Animation with Music</title>
+    <style>
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        body {
+            background-image: url('snowy-background.jpeg');
+            background-position: 50% 100%;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #particles-slow,
+        #particles-fast {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <audio id="audio" controls>
+        <source src="music.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+    <canvas id="audio-canvas"></canvas>
+    <div id="particles-slow"></div>
+    <div id="particles-fast" class="hidden"></div>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
+    <script>
+        const STATE = {
+            audio: null,
+            songEnded: false,
+            minMag: 0,
+            canvas: {
+                height: window.innerHeight,
+                width: window.innerWidth
+            }
+        };
+
+        const COLORS = [
+            'rgb(239,83,80)', 'rgb(211,47,47)', 'rgb(183,28,28)',
+            'rgb(255,112,67)', 'rgb(255,87,34)', 'rgb(216,67,21)',
+            'rgb(255,213,79)', 'rgb(255,193,7)', 'rgb(255,160,0)',
+            'rgb(102,187,106)', 'rgb(67,160,71)', 'rgb(27,94,32)',
+            'rgb(41,182,246)', 'rgb(25,118,210)', 'rgb(40,53,147)',
+            'rgb(126,87,194)', 'rgb(94,53,177)', 'rgb(69,39,160)',
+            'rgb(171,71,188)', 'rgb(142,36,170)', 'rgb(74,20,140)'
+        ];
+
+        const PARTICLE_CONFIG = {
+            particles: {
+                number: {
+                    value: 100
+                },
+                size: {
+                    value: 3,
+                    random: true
+                },
+                opacity: {
+                    value: 0.8,
+                    random: true
+                },
+                move: {
+                    direction: 'right',
+                    speed: 20
+                },
+                line_linked: {
+                    enable: false
+                }
+            },
+            interactivity: {
+                events: {
+                    onhover: {
+                        enable: false
+                    }
+                }
+            }
+        };
+
+        const canvas = document.getElementById('audio-canvas');
+        const ctx = canvas.getContext('2d');
+        const audio = document.getElementById('audio');
+        const PARTICLES_SLOW = document.getElementById('particles-slow');
+        const PARTICLES_FAST = document.getElementById('particles-fast');
+
+        const initializeCanvas = () => {
+            canvas.width = STATE.canvas.width;
+            canvas.height = STATE.canvas.height;
+        };
+
+        const initializeParticles = () => {
+            const config = { ...PARTICLE_CONFIG };
+            particlesJS('particles-slow', config);
+            config.particles.size.value = 5;
+            config.particles.move.speed = 50;
+            config.particles.number.value = 200;
+            particlesJS('particles-fast', config);
+        };
+
+        const processAudio = (mp3) => {
+            if (mp3 === 'default') {
+                audio.src = 'music.mp3';
+            } else {
+                audio.src = URL.createObjectURL(mp3);
+            }
+
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioCtx.createAnalyser();
+            const audioSrc = audioCtx.createMediaElementSource(audio);
+
+            audioSrc.connect(analyser);
+            audioSrc.connect(audioCtx.destination);
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            audio.play();
+
+            const drawVisual = () => {
+                requestAnimationFrame(drawVisual);
+                analyser.getByteFrequencyData(dataArray);
+                ctx.clearRect(0, 0, STATE.canvas.width, STATE.canvas.height);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+                ctx.fillRect(0, 0, STATE.canvas.width, STATE.canvas.height);
+
+                let radius = 150;
+                let cX = STATE.canvas.width / 2;
+                let cY = STATE.canvas.height / 2;
+                let inc = Math.round(bufferLength / 10);
+                let colorIndex = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    let mag = dataArray[i] / 255;
+
+                    if (mag < 0.03) {
+                        mag = getRand(STATE.minMag, 5) * 0.02;
+                    }
+
+                    let r = radius + 7 + 5;
+                    let angle = degToRad((i / bufferLength) * 360) - 90;
+                    let c1 = getCoords(cX, cY, r, angle);
+                    let c2 = getCoords(cX, cY, r + (mag * 30), angle);
+                    let c3 = getCoords(cX, cY, r + (mag * 35), angle);
+                    let c4 = getCoords(cX, cY, r + (mag * 40), angle);
+                    let c5 = getCoords(cX, cY, r + (mag * 45), angle);
+
+                    ctx.lineWidth = 10;
+                    ctx.lineCap = 'round';
+
+                    drawLine(ctx, COLORS[13], c3, c5);
+                    drawLine(ctx, COLORS[16], c2, c4);
+                    drawLine(ctx, COLORS[19], c1, c3);
+                    drawLine(ctx, 'white', c1, c2);
+
+                    if (hasSongEnded(audio) && !STATE.songEnded) {
+                        resetPlayer();
+                    }
+                }
+            };
+            drawVisual();
+        };
+
+        const getRand = (min, max) => Math.random() * (max - min) + min;
+
+        const degToRad = (deg) => (deg * Math.PI) / 180;
+
+        const getCoords = (cX, cY, r, a) => ({
+            x: cX + r * Math.cos(a),
+            y: cY + r * Math.sin(a)
+        });
+
+        const drawLine = (ctx, color, c1, c2) => {
+            ctx.beginPath();
+            ctx.moveTo(c1.x, c1.y);
+            ctx.lineTo(c2.x, c2.y);
+            ctx.strokeStyle = color;
+            ctx.stroke();
+        };
+
+        const hasSongEnded = (audio) => audio.currentTime >= audio.duration;
+
+        const resetPlayer = () => {
+            if (STATE.audio) STATE.audio.currentTime = STATE.audio.duration;
+            STATE.songEnded = true;
+            // Handle reset logic here
+        };
+
+        window.onload = () => {
+            initializeCanvas();
+            initializeParticles();
+            processAudio('default'); // Change to your mp3 file or 'default'
+        };
+
+    </script>
+</body>
+
+</html>
