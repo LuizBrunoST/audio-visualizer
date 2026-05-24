@@ -1,0 +1,10 @@
+html,body{
+margin:0;height:100%;overflow:hidden;background:#000;
+}
+#scene{
+position:fixed;inset:0;width:100vw;height:100vh;
+}
+#controls{
+position:fixed;top:10px;left:10px;z-index:10;
+background:rgba(0,0,0,.5);padding:8px;border-radius:8px;
+}

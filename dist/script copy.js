@@ -9,9 +9,6 @@ const STATE = {
     }
 }
 
-let recorder = null;
-let recordedChunks = [];
-
 let COLORS = [
     'rgb(239,83,80)', // light red - 0
     'rgb(211,47,47)', // med red - 1
@@ -212,25 +209,14 @@ const processAudio = mp3 => {
     }
     STATE.audio = audio
     audio.addEventListener('loadedmetadata', () => {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-        const audioSrc = audioCtx.createMediaElementSource(audio);
-
-        const analyser = audioCtx.createAnalyser();
-
-        const canvasCtx = AUDIO_CANVAS.getContext('2d');
-
-        audioSrc.connect(analyser);
-        audioSrc.connect(audioCtx.destination);
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)(),
+            audioSrc = audioCtx.createMediaElementSource(audio),
+            analyser = audioCtx.createAnalyser(),
+            canvasCtx = AUDIO_CANVAS.getContext('2d')
 
         audioSrc.connect(analyser)
         audioSrc.connect(audioCtx.destination)
         analyser.fftSize = 256
-        startRecording(
-            AUDIO_CANVAS,
-            audio,
-            audioCtx
-        );
         audio.play()
 
         const bufferLength = analyser.frequencyBinCount,
@@ -277,11 +263,7 @@ const processAudio = mp3 => {
                 drawLine(canvasCtx, 'white', c1, c2)
 
                 if (hasSongEnded(audio) && !STATE.songEnded) {
-                    if (recorder &&
-                        recorder.state === 'recording') {
-                        recorder.stop();
-                    }
-                    resetPlayer();
+                    resetPlayer()
                 }
             }
         }
@@ -411,59 +393,6 @@ window.ondrop = e => {
     e.stopPropagation()
     e.preventDefault()
 }
-
-
-function startRecording(
-    canvas,
-    audioSrc,
-    audioCtx
-){
-    recordedChunks = [];
-
-    const canvasStream =
-        canvas.captureStream(60);
-
-    const destination =
-        audioCtx.createMediaStreamDestination();
-
-    audioSrc.connect(destination);
-
-    const stream = new MediaStream([
-        ...canvasStream.getVideoTracks(),
-        ...destination.stream.getAudioTracks()
-    ]);
-
-    recorder = new MediaRecorder(stream,{
-        mimeType:'video/webm'
-    });
-
-    recorder.ondataavailable = e=>{
-        if(e.data.size){
-            recordedChunks.push(e.data);
-        }
-    };
-
-    recorder.onstop = ()=>{
-
-        const blob = new Blob(
-            recordedChunks,
-            {type:'video/webm'}
-        );
-
-        const url =
-            URL.createObjectURL(blob);
-
-        const a =
-            document.createElement('a');
-
-        a.href = url;
-        a.download = 'visualizer.webm';
-        a.click();
-    };
-
-    recorder.start();
-}
-
 
 // canvasCtx.beginPath()
 // canvasCtx.arc(cX, cY, r, 0, 2 * Math.PI, false)
